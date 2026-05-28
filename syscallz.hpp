@@ -14,7 +14,7 @@
 
 #define XOR_KEY 0x67
 
-inline DWORD RvaToFileOffset(PIMAGE_NT_HEADERS ntHeaders, DWORD rva) {
+static inline DWORD RvaToFileOffset(PIMAGE_NT_HEADERS ntHeaders, DWORD rva) {
 	PIMAGE_SECTION_HEADER sectionHeader = IMAGE_FIRST_SECTION(ntHeaders);
 
 	for (int sectionIndex = 0; sectionIndex < ntHeaders->FileHeader.NumberOfSections; ++sectionIndex, ++sectionHeader) {
@@ -50,7 +50,7 @@ struct XorStr {
 	}
 };
 
-inline std::unordered_map<std::string, uint32_t> buildNtdllMap() {
+static inline std::unordered_map<std::string, uint32_t> buildNtdllMap() {
 	std::unordered_map<std::string, uint32_t> syscallMappings;
 
 	HANDLE hFile = CreateFileA(
@@ -145,12 +145,12 @@ inline SetSyscallIndexStub setSyscallIndexStub = nullptr;
 inline void* executeSyscallWithArgsStub = nullptr;
 inline ResetSyscallIndexStub resetSyscallIndexStub = nullptr;
 
-inline void PatchAddress(BYTE* code, size_t offset, const void* address) {
+static inline void PatchAddress(BYTE* code, size_t offset, const void* address) {
 	const auto patchedAddress = reinterpret_cast<uintptr_t>(address);
 	std::memcpy(code + offset, &patchedAddress, sizeof(patchedAddress));
 }
 
-inline bool InitSyscallStub() {
+static inline bool InitSyscallStub() {
 	constexpr std::array<BYTE, 13> setSyscallIndexCode = {
 		0x48, 0xB8,                         // mov rax, imm64
 		0x00, 0x00, 0x00, 0x00,
@@ -226,14 +226,14 @@ inline bool InitSyscallStub() {
 	return true;
 }
 
-inline bool syscallStubReady = InitSyscallStub();
+static inline bool syscallStubReady = InitSyscallStub();
 
-inline void SetSyscallIndex(uint32_t idx) {
+static inline void SetSyscallIndex(uint32_t idx) {
 	setSyscallIndexStub(idx);
 }
 
 template <typename T>
-decltype(auto) NormalizeSyscallArg(T&& value) {
+static decltype(auto) NormalizeSyscallArg(T&& value) {
 	using Arg = std::remove_cvref_t<T>;
 
 	if constexpr (std::is_null_pointer_v<Arg>) {
@@ -256,14 +256,14 @@ decltype(auto) NormalizeSyscallArg(T&& value) {
 }
 
 template <typename... Args>
-inline NTSTATUS ExecuteSyscallWithArgs(Args&&... args) {
+static inline NTSTATUS ExecuteSyscallWithArgs(Args&&... args) {
 	using ExecuteSyscallWithArgsFn = NTSTATUS(*)(...);
 	auto executeSyscallWithArgs = reinterpret_cast<ExecuteSyscallWithArgsFn>(executeSyscallWithArgsStub);
 
 	return executeSyscallWithArgs(NormalizeSyscallArg(std::forward<Args>(args))...);
 }
 
-inline void ResetSyscallIndex() {
+static inline void ResetSyscallIndex() {
 	resetSyscallIndexStub();
 }
 
@@ -280,7 +280,7 @@ struct ProcName {
 
 };
 
-inline auto ntdllMappings = std::unordered_map<std::string, uint32_t>{};
+static inline auto ntdllMappings = std::unordered_map<std::string, uint32_t>{};
 
 namespace syscallz {
 	inline void init() {

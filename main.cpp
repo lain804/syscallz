@@ -8,6 +8,7 @@ int main() {
 
     SIZE_T portNumber = 0;
     {
+        // https://learn.microsoft.com/en-us/windows/win32/api/winternl/nf-winternl-ntqueryinformationprocess
         NTSTATUS ok = syscallz::syscall<"NtQueryInformationProcess">(
             GetCurrentProcess(),
             ProcessDebugPort,
@@ -19,6 +20,7 @@ int main() {
     }
     printf("Debugger Detected: %s\n", portNumber != 0 ? "true" : "false");
 
+    // https://learn.microsoft.com/en-us/windows/win32/devnotes/ntqueryperformancecounter
     LARGE_INTEGER start, end ,freq;
     {
         NTSTATUS ok = syscallz::syscall<"NtQueryPerformanceCounter">(
